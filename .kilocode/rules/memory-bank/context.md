@@ -1,87 +1,99 @@
-# Active Context: Next.js Starter Template
+# Active Context: FraudGuard ML Fraud Detection System
 
 ## Current State
 
-**Template Status**: ✅ Ready for development
+**Project Status**: ✅ Phases 3–7 scaffolding complete + Next.js frontend live
 
-The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. It's ready for AI-assisted expansion to build any type of application.
+The project has been transformed from a blank Next.js template into a full FraudGuard
+ML fraud detection system. The Next.js frontend is live and connects to a Flask ML
+microservice via ngrok tunnel.
+
+## Flask ML Service (Active)
+- **Ngrok URL**: `https://scientistic-subcheliform-syreeta.ngrok-free.dev`
+- **Local**: `http://localhost:5000`
+- **Framework**: Flask (Python 3.11)
 
 ## Recently Completed
 
-- [x] Base Next.js 16 setup with App Router
-- [x] TypeScript configuration with strict mode
-- [x] Tailwind CSS 4 integration
-- [x] ESLint configuration
-- [x] Memory bank documentation
-- [x] Recipe system for common features
+- [x] Phase 3: Laravel Core System scaffolding
+  - AuthController (login, register, RBAC, password reset)
+  - DatasetController (CSV upload, validation, job dispatch)
+  - JobController (queue monitoring, retry)
+  - AdminController (user management, role assignment)
+  - MetadataController (audit trail)
+  - RoleMiddleware (admin/analyst/vendor)
+  - MlApiSecretMiddleware (shared secret auth)
+  - Models: User, Dataset, FraudResult, FraudExplanation, JobLog, AuditLog
+  - 6 database migrations with indexes
+  - Blade views: login, dashboard, upload, fraud-map, time-series, explainability
+  - Routes: web.php + api.php
 
-## Current Structure
+- [x] Phase 4: Laravel ↔ Python Integration
+  - ProcessDatasetJob (async, 3 retries, 10min timeout)
+  - MlApiService (HTTP client, shared secret, retry logic)
+  - FraudResultApiController (ML callback receiver)
+  - ExplainabilityApiController (SHAP callback receiver)
+  - config/services.php with ML service config
 
-| File/Directory | Purpose | Status |
-|----------------|---------|--------|
-| `src/app/page.tsx` | Home page | ✅ Ready |
-| `src/app/layout.tsx` | Root layout | ✅ Ready |
-| `src/app/globals.css` | Global styles | ✅ Ready |
-| `.kilocode/` | AI context & recipes | ✅ Ready |
+- [x] Phase 4: Python ML Microservice (FastAPI)
+  - main.py (FastAPI app with CORS)
+  - /process-dataset, /explain, /health endpoints
+  - FraudDetectorService (model loading + placeholder predictions)
+  - ShapExplainerService (SHAP integration)
+  - CallbackService (async HTTP POST back to Laravel)
+  - Dockerfile, requirements.txt
 
-## Current Focus
+- [x] Phase 5: Analytics Dashboards (Next.js)
+  - /dashboard: geo risk, vendor rankings, time-series bar chart
+  - Placeholder data ready for real ML results
 
-The template is ready. Next steps depend on user requirements:
+- [x] Phase 6: Explainability (Next.js)
+  - /explain: SHAP feature importance visualization
+  - Human-readable narrative display
+  - Demo mode (works without ML service)
 
-1. What type of application to build
-2. What features are needed
-3. Design/branding preferences
+- [x] Phase 7: Deployment
+  - docker-compose.yml (Laravel, Python, Nginx, MySQL, Redis, queue worker)
+  - Nginx config with SSL placeholder
+  - .env.example files
 
-## Quick Start Guide
+- [x] Next.js Frontend (fixes blank app)
+  - Home page with navigation
+  - /upload: CSV → Flask ngrok → fraud results table
+  - /api-test: Flask connectivity tester + code snippets
+  - /dashboard: Phase 5 analytics
+  - /explain: Phase 6 SHAP explainability
 
-### To add a new page:
+## Current File Structure
 
-Create a file at `src/app/[route]/page.tsx`:
-```tsx
-export default function NewPage() {
-  return <div>New page content</div>;
-}
-```
+| Path | Purpose | Status |
+|------|---------|--------|
+| `src/app/page.tsx` | Home/landing page | ✅ Live |
+| `src/app/upload/page.tsx` | CSV upload + ML results | ✅ Live |
+| `src/app/dashboard/page.tsx` | Analytics dashboard | ✅ Live |
+| `src/app/explain/page.tsx` | SHAP explainability | ✅ Live |
+| `src/app/api-test/page.tsx` | Flask API tester | ✅ Live |
+| `fraud-detection-app/` | Laravel scaffolding | ✅ Ready |
+| `fraud-detection-app/python-ml-service/` | FastAPI scaffolding | ✅ Ready |
 
-### To add components:
+## What's Needed Next
 
-Create `src/components/` directory and add components:
-```tsx
-// src/components/ui/Button.tsx
-export function Button({ children }: { children: React.ReactNode }) {
-  return <button className="px-4 py-2 bg-blue-600 text-white rounded">{children}</button>;
-}
-```
+1. **Connect real ML model**: Replace placeholder in `fraud_detector.py` with Phase 2 model
+2. **Add /predict endpoint to Flask**: The Next.js upload page calls `POST /predict`
+3. **Add /explain endpoint to Flask**: The explain page calls `GET /explain/<id>`
+4. **Laravel setup**: Run `composer install`, `php artisan migrate`, configure `.env`
 
-### To add a database:
+## Flask Endpoints Expected by Frontend
 
-Follow `.kilocode/recipes/add-database.md`
-
-### To add API routes:
-
-Create `src/app/api/[route]/route.ts`:
-```tsx
-import { NextResponse } from "next/server";
-
-export async function GET() {
-  return NextResponse.json({ message: "Hello" });
-}
-```
-
-## Available Recipes
-
-| Recipe | File | Use Case |
-|--------|------|----------|
-| Add Database | `.kilocode/recipes/add-database.md` | Data persistence with Drizzle + SQLite |
-
-## Pending Improvements
-
-- [ ] Add more recipes (auth, email, etc.)
-- [ ] Add example components
-- [ ] Add testing setup recipe
+| Method | Path | Called by |
+|--------|------|-----------|
+| GET | /health | Dashboard (status check) |
+| POST | /predict | Upload page (fraud detection) |
+| GET | /explain/<id> | Explain page (SHAP) |
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
 | Initial | Template created with base setup |
+| 2026-02-26 | Full phases 3-7 scaffolding + Next.js dashboard with Flask ngrok integration |
