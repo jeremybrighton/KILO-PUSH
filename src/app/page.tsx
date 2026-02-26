@@ -90,6 +90,14 @@ export default function Home() {
               color: "green",
               href: "/explain",
             },
+            {
+              phase: "NEW",
+              icon: "🤖",
+              title: "AI Assistant",
+              desc: "Chatbot for contextual fraud analysis and explanations",
+              color: "indigo",
+              href: "/chatbot",
+            },
           ].map((card) => (
             <Link key={card.phase} href={card.href}
               className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-600 transition group">

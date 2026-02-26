@@ -52,6 +52,13 @@ microservice via ngrok tunnel.
   - Human-readable narrative display
   - Demo mode (works without ML service)
 
+- [x] Phase 7: AI Chatbot Assistant
+  - /chatbot: Conversational AI for fraud analysis
+  - Contextual explanations of fraud detection results
+  - Interactive Q&A about transaction risk factors
+  - Transaction ID lookup integration
+  - Quick action buttons for common queries
+
 - [x] Phase 7: Deployment
   - docker-compose.yml (Laravel, Python, Nginx, MySQL, Redis, queue worker)
   - Nginx config with SSL placeholder
@@ -73,15 +80,14 @@ microservice via ngrok tunnel.
 | `src/app/dashboard/page.tsx` | Analytics dashboard | ✅ Live |
 | `src/app/explain/page.tsx` | SHAP explainability | ✅ Live |
 | `src/app/api-test/page.tsx` | Flask API tester | ✅ Live |
+| `src/app/chatbot/page.tsx` | AI Assistant chatbot | ✅ Live |
 | `fraud-detection-app/` | Laravel scaffolding | ✅ Ready |
 | `fraud-detection-app/python-ml-service/` | FastAPI scaffolding | ✅ Ready |
 
 ## What's Needed Next
 
 1. **Connect real ML model**: Replace placeholder in `fraud_detector.py` with Phase 2 model
-2. **Add /predict endpoint to Flask**: The Next.js upload page calls `POST /predict`
-3. **Add /explain endpoint to Flask**: The explain page calls `GET /explain/<id>`
-4. **Laravel setup**: Run `composer install`, `php artisan migrate`, configure `.env`
+2. **Laravel setup**: Run `composer install`, `php artisan migrate`, configure `.env`
 
 ## Flask Endpoints Expected by Frontend
 
@@ -89,7 +95,7 @@ microservice via ngrok tunnel.
 |--------|------|-----------|
 | GET | /health | Dashboard (status check) |
 | POST | /predict | Upload page (fraud detection) |
-| GET | /explain/<id> | Explain page (SHAP) |
+| GET | /explain/<id> | Explain page & Chatbot (SHAP) |
 
 ## Session History
 
