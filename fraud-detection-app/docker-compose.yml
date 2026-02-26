@@ -1,0 +1,134 @@
+# PHASE 7 — Docker Compose for Local Development & Production
+# Orchestrates Laravel, Python ML service, MySQL, Redis, and Nginx
+#
+# Usage:
+#   Development:  docker-compose up -d
+#   Production:   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+
+  # ── Laravel PHP Application ─────────────────────────
+  laravel:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: fraudguard-laravel
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      - ./storage:/var/www/html/storage
+    environment:
+      - APP_ENV=local
+      - APP_KEY=${APP_KEY}
+      - DB_HOST=mysql
+      - DB_DATABASE=${DB_DATABASE:-fraudguard}
+      - DB_USERNAME=${DB_USERNAME:-fraudguard}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - REDIS_HOST=redis
+      - QUEUE_CONNECTION=redis
+      - ML_SERVICE_URL=http://ml-service:5000
+      - ML_SERVICE_SECRET=${ML_SERVICE_SECRET}
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - fraudguard
+
+  # ── Python ML Microservice ──────────────────────────
+  ml-service:
+    build:
+      context: ./python-ml-service
+      dockerfile: Dockerfile
+    container_name: fraudguard-ml
+    restart: unless-stopped
+    volumes:
+      - ./python-ml-service:/app
+      - ./storage/app:/var/www/html/storage/app:ro  # Read-only access to uploaded files
+    environment:
+      - ML_SECRET=${ML_SERVICE_SECRET}
+      - MODEL_PATH=/app/models/fraud_model.pkl
+      - FRAUD_THRESHOLD=0.5
+      - ANOMALY_THRESHOLD=0.7
+    ports:
+      - "5000:5000"   # Exposed for debugging; remove in production
+    networks:
+      - fraudguard
+
+  # ── Nginx Web Server ────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: fraudguard-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro  # SSL certificates (Phase 7)
+    depends_on:
+      - laravel
+    networks:
+      - fraudguard
+
+  # ── MySQL Database ──────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: fraudguard-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-fraudguard}
+      MYSQL_USER: ${DB_USERNAME:-fraudguard}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"   # Remove in production
+    networks:
+      - fraudguard
+
+  # ── Redis Queue Driver ──────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: fraudguard-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - fraudguard
+
+  # ── Laravel Queue Worker ────────────────────────────
+  # Processes background jobs (ML processing requests)
+  queue-worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: fraudguard-queue
+    restart: unless-stopped
+    command: php artisan queue:work redis --queue=ml-processing,default --tries=3 --timeout=600
+    volumes:
+      - .:/var/www/html
+    environment:
+      - APP_ENV=local
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+      - QUEUE_CONNECTION=redis
+      - ML_SERVICE_URL=http://ml-service:5000
+      - ML_SERVICE_SECRET=${ML_SERVICE_SECRET}
+    depends_on:
+      - mysql
+      - redis
+      - ml-service
+    networks:
+      - fraudguard
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  fraudguard:
+    driver: bridge
