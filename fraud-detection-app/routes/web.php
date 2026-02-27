@@ -13,6 +13,7 @@ use App\Http\Controllers\JobController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\MetadataController;
+use App\Http\Controllers\SettingsController;
 
 // ─────────────────────────────────────────────
 // PUBLIC ROUTES — No authentication required
@@ -60,6 +61,22 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('metadata')->name('metadata.')->group(function () {
         Route::get('/',             [MetadataController::class, 'index'])->name('index');
         Route::get('/{metadata}',   [MetadataController::class, 'show'])->name('show');
+    });
+
+    // ── Settings ────────────────────────────────
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/',                 [SettingsController::class, 'index'])->name('index');
+        Route::post('/thresholds',     [SettingsController::class, 'updateThresholds'])->name('thresholds');
+        Route::post('/alerts',          [SettingsController::class, 'updateAlerts'])->name('alerts');
+        Route::post('/vendor-rules',    [SettingsController::class, 'updateVendorRules'])->name('vendor-rules');
+        Route::post('/api-config',      [SettingsController::class, 'updateApiConfig'])->name('api-config');
+        Route::get('/users',            [SettingsController::class, 'users'])->name('users');
+        Route::post('/users/{user}/role', [SettingsController::class, 'updateUserRole'])->name('users.role');
+        Route::get('/audit-logs',       [SettingsController::class, 'auditLogs'])->name('audit-logs');
+        Route::get('/profile',          [SettingsController::class, 'profile'])->name('profile');
+        Route::post('/profile',         [SettingsController::class, 'updateProfile'])->name('profile.update');
+        Route::post('/password',        [SettingsController::class, 'updatePassword'])->name('password.update');
+        Route::get('/test-api',         [SettingsController::class, 'testApiConnection'])->name('test-api');
     });
 });
 
