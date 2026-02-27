@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
+const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -100,7 +102,7 @@ export default function ChatBotPage() {
   const handleTransactionLookup = async (transactionId: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`https://scientistic-subcheliform-syreeta.ngrok-free.dev/explain/${transactionId}`, {
+      const res = await fetch(`${ML_API_URL}/explain/${transactionId}`, {
         headers: { "ngrok-skip-browser-warning": "true" },
       });
 

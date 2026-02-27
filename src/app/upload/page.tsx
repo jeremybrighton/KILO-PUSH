@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 
-const ML_API_URL = "https://scientistic-subcheliform-syreeta.ngrok-free.dev";
+const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
 
 interface PredictionResult {
   transaction_id: string;

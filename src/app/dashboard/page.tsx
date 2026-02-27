@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const ML_API_URL = "https://scientistic-subcheliform-syreeta.ngrok-free.dev";
+const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
 
 // Placeholder data for Phase 5 dashboard (replace with real ML results)
 const PLACEHOLDER_GEO = [

@@ -116,9 +116,9 @@ export default function Home() {
           <h3 className="font-bold text-white mb-4">🔌 ML Service Configuration</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="bg-gray-800 rounded-lg p-4">
-              <p className="text-gray-400 mb-1">Ngrok Tunnel URL</p>
+              <p className="text-gray-400 mb-1">Configured ML API URL</p>
               <code className="text-green-400 text-xs break-all">
-                https://scientistic-subcheliform-syreeta.ngrok-free.dev
+                {process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000 (default)"}
               </code>
             </div>
             <div className="bg-gray-800 rounded-lg p-4">

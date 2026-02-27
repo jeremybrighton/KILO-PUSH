@@ -2,16 +2,17 @@
 
 ## Current State
 
-**Project Status**: ✅ Phases 3–7 scaffolding complete + Next.js frontend live
+**Project Status**: ✅ Phases 3–7 scaffolding complete + Next.js frontend configurable via env vars
 
 The project has been transformed from a blank Next.js template into a full FraudGuard
-ML fraud detection system. The Next.js frontend is live and connects to a Flask ML
-microservice via ngrok tunnel.
+ML fraud detection system. The Next.js frontend now uses environment variables
+for the ML service URL (NEXT_PUBLIC_ML_API_URL), making deployment to any host possible.
 
-## Flask ML Service (Active)
-- **Ngrok URL**: `https://scientistic-subcheliform-syreeta.ngrok-free.dev`
-- **Local**: `http://localhost:5000`
-- **Framework**: Flask (Python 3.11)
+## Recently Completed
+
+- [x] **Environment Variable Fix**: Replaced hardcoded ngrok URLs with configurable
+  `NEXT_PUBLIC_ML_API_URL` environment variable across all pages
+- [x] **.env.local.example**: Created template for deployment configuration
 
 ## Recently Completed
 
@@ -103,3 +104,4 @@ microservice via ngrok tunnel.
 |------|---------|
 | Initial | Template created with base setup |
 | 2026-02-26 | Full phases 3-7 scaffolding + Next.js dashboard with Flask ngrok integration |
+| 2026-02-27 | Fixed hardcoded ngrok URLs - now using NEXT_PUBLIC_ML_API_URL env var |
