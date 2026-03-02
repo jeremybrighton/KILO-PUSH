@@ -51,6 +51,11 @@ services:
       - MODEL_PATH=/app/models/fraud_model.pkl
       - FRAUD_THRESHOLD=0.5
       - ANOMALY_THRESHOLD=0.7
+      # OpenAI Configuration (Phase 7 - AI Explanations)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_TEMPERATURE=0.3
+      - OPENAI_MAX_TOKENS=500
     ports:
       - "5000:5000"   # Exposed for debugging; remove in production
     networks:

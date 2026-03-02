@@ -26,19 +26,48 @@ interface FraudContext {
   baseValue?: number;
 }
 
+interface AIStatus {
+  configured: boolean;
+  model?: string;
+  message: string;
+}
+
 export default function ChatBotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "assistant",
-      content: "Hello! I'm your FraudGuard AI assistant. I can help you understand fraud detection results, explain risk factors, and provide insights into why certain transactions were flagged. You can ask me things like:\n\n- 'Why was transaction X flagged as fraud?'\n- 'What are the main risk factors?'\n- 'Explain the fraud score for transaction Y'\n\nHow can I help you today?",
+      content: "Hello! I'm your FraudGuard AI assistant powered by OpenAI GPT. I can help you understand fraud detection results, explain risk factors, and provide insights into why certain transactions were flagged.\n\n**New Features:**\n- Context-aware conversations with transaction history\n- AI-generated explanations for any transaction\n- Investigation recommendations\n\nYou can ask me things like:\n- 'Why was transaction X flagged as fraud?'\n- 'What are the main risk factors?'\n- 'Should I block this transaction?'\n\nHow can I help you today?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [fraudContext, setFraudContext] = useState<FraudContext | null>(null);
+  const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
+  const [chatContext, setChatContext] = useState<{ history: Array<{ role: string; content: string }> } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check AI status on mount
+  useEffect(() => {
+    const checkAIStatus = async () => {
+      try {
+        const res = await fetch(`${ML_API_URL}/chat/status`, {
+          headers: { "ngrok-skip-browser-warning": "true" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAiStatus(data);
+        }
+      } catch (error) {
+        setAiStatus({
+          configured: false,
+          message: "Unable to connect to AI service"
+        });
+      }
+    };
+    checkAIStatus();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,68 +77,52 @@ export default function ChatBotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const generateResponse = async (userMessage: string): Promise<string> => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // If we have fraud context, provide contextual responses
-    if (fraudContext) {
-      if (lowerMessage.includes("why") || lowerMessage.includes("explain")) {
-        if (fraudContext.narrative) {
-          return `Based on the analysis of transaction ${fraudContext.transactionId || 'in question'}:\n\n${fraudContext.narrative}\n\n**Key Risk Factors:**\n${fraudContext.topFeatures?.slice(0, 3).map((f, i) => `${i + 1}. ${f.name}: ${f.impact > 0 ? 'increased' : 'decreased'} risk by ${Math.abs(f.impact).toFixed(1)}%`).join('\n') || 'No specific factors identified'}\n\nThe fraud score of ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}% indicates ${fraudContext.isFraud ? 'a high likelihood of fraudulent activity' : 'some suspicious patterns that warrant attention'}.`;
-        }
-      }
-      
-      if (lowerMessage.includes("score") || lowerMessage.includes("confidence")) {
-        return `The fraud score for this transaction is ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}%.\n\nThis score is calculated using our machine learning model and represents the probability that this transaction is fraudulent. Here's how we interpret this:\n\n- **80-100%**: High fraud risk - immediate action recommended\n- **50-79%**: Medium fraud risk - review recommended\n- **20-49%**: Low fraud risk - monitor if needed\n- **0-19%**: Minimal risk - likely legitimate\n\nCurrent risk level: **${fraudContext.isFraud ? 'HIGH' : 'MEDIUM/LOW'}**`;
-      }
-
-      if (lowerMessage.includes("feature") || lowerMessage.includes("factor") || lowerMessage.includes("reason")) {
-        if (fraudContext.topFeatures && fraudContext.topFeatures.length > 0) {
-          return `The main factors contributing to this fraud analysis are:\n\n${fraudContext.topFeatures.map((f, i) => {
-            const impactDesc = f.impact > 0 ? 'increases' : 'decreases';
-            const riskLevel = f.impact > 5 ? 'significantly' : f.impact > 2 ? 'moderately' : 'slightly';
-            return `**${i + 1}. ${f.name}**: Value "${f.value}" ${impactDesc} fraud risk by ${riskLevel} (${Math.abs(f.impact).toFixed(2)}%)`;
-          }).join('\n\n')}`;
-        }
-      }
-
-      if (lowerMessage.includes("transaction") || lowerMessage.includes("details")) {
-        return `Here's the detailed breakdown for transaction ${fraudContext.transactionId || 'in question'}:\n\n**Fraud Score**: ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}%\n**Classification**: ${fraudContext.isFraud ? '⚠️ Flagged as Fraud' : '✅ Not Flagged'}\n**Base Rate**: ${(fraudContext.baseValue ? fraudContext.baseValue * 100 : 50).toFixed(1)}%\n\n${fraudContext.narrative ? `**Analysis**: ${fraudContext.narrative}` : ''}`;
-      }
-    }
-
-    // Default contextual responses
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("hey")) {
-      return "Hello! I'm here to help you understand fraud detection results. You can ask me to explain specific transactions, risk factors, or how our detection system works. What would you like to know?";
-    }
-
-    if (lowerMessage.includes("how") && lowerMessage.includes("work")) {
-      return "Our fraud detection system uses machine learning to analyze transactions in real-time. Here's how it works:\n\n1. **Data Collection**: Transaction details are captured including amount, location, time, device info, and historical patterns.\n\n2. **Feature Analysis**: Our model analyzes hundreds of features including spending patterns, geographical anomalies, and behavioral signals.\n\n3. **Risk Scoring**: Each transaction receives a fraud score (0-100%) based on how closely it matches known fraud patterns.\n\n4. **Decision**: Transactions with scores above threshold are flagged for review or automatic blocking.\n\nWould you like more details on any specific aspect?";
-    }
-
-    if (lowerMessage.includes("what") && lowerMessage.includes("fraud")) {
-      return "Fraud, in the context of our detection system, refers to transactions that show suspicious characteristics indicating they may be unauthorized or deceptive. This includes:\n\n- **Account takeover**: Legitimate credentials used fraudulently\n- **Card testing**: Small fraudulent transactions to validate stolen cards\n- **Velocity anomalies**: Unusual spending patterns\n- **Geographic impossibilities**: Transactions from impossible locations\n- **Device fingerprinting**: Suspicious device signals\n\nOur AI analyzes these patterns to protect your users and transactions.";
-    }
-
-    if (lowerMessage.includes("help")) {
-      return "I can help you with:\n\n🔍 **Transaction Analysis**: 'Explain transaction ABC123'\n📊 **Risk Understanding**: 'What does this score mean?'\n⚠️ **Factor Identification**: 'What are the risk factors?'\n💡 **System Information**: 'How does fraud detection work?'\n📈 **Pattern Recognition**: 'What patterns indicate fraud?'\n\nJust ask me a question!";
-    }
-
-    // Default response when no specific context
-    return "I'd be happy to help you understand fraud detection better! To provide specific analysis, you can either:\n\n1. **Enter a transaction ID** in the form below to load specific fraud analysis\n2. **Ask general questions** about how fraud detection works\n\nWhat would you like to explore?";
-  };
-
   const handleTransactionLookup = async (transactionId: string) => {
     setIsLoading(true);
     try {
+      // Try the explain endpoint first
       const res = await fetch(`${ML_API_URL}/explain/${transactionId}`, {
         headers: { "ngrok-skip-browser-warning": "true" },
       });
 
       if (res.ok) {
         const data = await res.json();
-        setFraudContext(data);
-        return `I've loaded the analysis for transaction ${transactionId}. The fraud score is ${((data.fraud_score || 0) * 100).toFixed(1)}% and it was ${data.is_fraud ? 'flagged as fraud' : 'not flagged'}. You can now ask me specific questions about this transaction!`;
+        setFraudContext({
+          transactionId,
+          fraudScore: data.fraud_score,
+          isFraud: data.is_fraud,
+          narrative: data.narrative,
+          topFeatures: data.top_features,
+          baseValue: data.base_value,
+        });
+        
+        // Also try to get AI explanation
+        if (aiStatus?.configured) {
+          try {
+            const aiRes = await fetch(`${ML_API_URL}/explain/transaction`, {
+              method: "POST",
+              headers: { 
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true"
+              },
+              body: JSON.stringify({
+                transaction_id: transactionId,
+                transaction_data: data,
+                fraud_score: data.fraud_score,
+                risk_factors: data.top_features,
+              }),
+            });
+            
+            if (aiRes.ok) {
+              const aiData = await aiRes.json();
+              return `I've loaded the analysis for transaction ${transactionId}.\n\n**AI Analysis:**\n${aiData.explanation}\n\n**Risk Level:** ${aiData.risk_level}\n**Recommendation:** ${aiData.recommendation}\n\nYou can ask me to explain this further or ask specific questions!`;
+            }
+          } catch (aiError) {
+            console.error("AI explanation failed:", aiError);
+          }
+        }
+        
+        return `I've loaded the analysis for transaction ${transactionId}. The fraud score is ${((data.fraud_score || 0) * 100).toFixed(1)}% and it was ${data.is_fraud ? 'flagged as fraud' : 'not flagged'}. ${data.narrative ? `\n\n${data.narrative}` : ''}\n\nYou can now ask me specific questions about this transaction!`;
       } else {
         return `I couldn't find transaction ${transactionId}. It may not exist in the system yet, or there might be an issue with the database. Would you like to try a different transaction ID?`;
       }
@@ -140,11 +153,46 @@ export default function ChatBotPage() {
       const transactionMatch = input.match(/transaction\s+([a-zA-Z0-9-]+)/i) || input.match(/^([a-zA-Z0-9-]{8,})$/i);
       
       let responseContent: string;
-      if (transactionMatch) {
+      
+      // Use OpenAI chat if configured
+      if (aiStatus?.configured) {
+        try {
+          const res = await fetch(`${ML_API_URL}/chat`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true"
+            },
+            body: JSON.stringify({
+              message: input,
+              transaction_id: fraudContext?.transactionId,
+              transaction_data: fraudContext ? {
+                transaction_id: fraudContext.transactionId,
+                fraud_score: fraudContext.fraudScore,
+                is_fraud: fraudContext.isFraud,
+                top_features: fraudContext.topFeatures,
+              } : undefined,
+              context: chatContext,
+            }),
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            setChatContext(data.context);
+            responseContent = data.response;
+          } else {
+            throw new Error("Chat failed");
+          }
+        } catch {
+          // Fall back to local responses
+          responseContent = await generateLocalResponse(input);
+        }
+      } else if (transactionMatch) {
         const transactionId = transactionMatch[1] || transactionMatch[0];
         responseContent = await handleTransactionLookup(transactionId);
       } else {
-        responseContent = await generateResponse(input);
+        // Use local responses when AI not available
+        responseContent = await generateLocalResponse(input);
       }
 
       const assistantMessage: Message = {
@@ -171,6 +219,69 @@ export default function ChatBotPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Local response generation (fallback when AI not available)
+  const generateLocalResponse = async (userMessage: string): Promise<string> => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // If we have fraud context, provide contextual responses
+    if (fraudContext) {
+      if (lowerMessage.includes("why") || lowerMessage.includes("explain")) {
+        if (fraudContext.narrative) {
+          return `Based on the analysis of transaction ${fraudContext.transactionId || 'in question'}:\n\n${fraudContext.narrative}\n\n**Key Risk Factors:**\n${fraudContext.topFeatures?.slice(0, 3).map((f, i) => `${i + 1}. ${f.name}: ${f.impact > 0 ? 'increased' : 'decreased'} risk by ${Math.abs(f.impact).toFixed(1)}%`).join('\n') || 'No specific factors identified'}\n\nThe fraud score of ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}% indicates ${fraudContext.isFraud ? 'a high likelihood of fraudulent activity' : 'some suspicious patterns that warrant attention'}.`;
+        }
+      }
+      
+      if (lowerMessage.includes("score") || lowerMessage.includes("confidence")) {
+        return `The fraud score for this transaction is ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}%.\n\nThis score is calculated using our machine learning model and represents the probability that this transaction is fraudulent. Here's how we interpret this:\n\n- **80-100%**: High fraud risk - immediate action recommended\n- **50-79%**: Medium fraud risk - review recommended\n- **20-49%**: Low fraud risk - monitor if needed\n- **0-19%**: Minimal risk - likely legitimate\n\nCurrent risk level: **${fraudContext.isFraud ? 'HIGH' : 'MEDIUM/LOW'}**`;
+      }
+
+      if (lowerMessage.includes("feature") || lowerMessage.includes("factor") || lowerMessage.includes("reason")) {
+        if (fraudContext.topFeatures && fraudContext.topFeatures.length > 0) {
+          return `The main factors contributing to this fraud analysis are:\n\n${fraudContext.topFeatures.map((f, i) => {
+            const impactDesc = f.impact > 0 ? 'increases' : 'decreases';
+            const riskLevel = f.impact > 5 ? 'significantly' : f.impact > 2 ? 'moderately' : 'slightly';
+            return `**${i + 1}. ${f.name}**: Value "${f.value}" ${impactDesc} fraud risk by ${riskLevel} (${Math.abs(f.impact).toFixed(2)}%)`;
+          }).join('\n\n')}`;
+        }
+      }
+
+      if (lowerMessage.includes("transaction") || lowerMessage.includes("details")) {
+        return `Here's the detailed breakdown for transaction ${fraudContext.transactionId || 'in question'}:\n\n**Fraud Score**: ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}%\n**Classification**: ${fraudContext.isFraud ? '⚠️ Flagged as Fraud' : '✅ Not Flagged'}\n**Base Rate**: ${(fraudContext.baseValue ? fraudContext.baseValue * 100 : 50).toFixed(1)}%\n\n${fraudContext.narrative ? `**Analysis**: ${fraudContext.narrative}` : ''}`;
+      }
+
+      if (lowerMessage.includes("block") || lowerMessage.includes("allow") || lowerMessage.includes("approve") || lowerMessage.includes("decline")) {
+        const score = fraudContext.fraudScore || 0;
+        if (score >= 0.7) {
+          return `Based on the fraud score of ${(score * 100).toFixed(1)}%, **I recommend BLOCKING** this transaction. The risk level is HIGH and there are significant indicators of fraudulent activity.\n\nHowever, you should review the specific risk factors before making a final decision.`;
+        } else if (score >= 0.5) {
+          return `Based on the fraud score of ${(score * 100).toFixed(1)}%, **I recommend REVIEW** this transaction. The risk level is MEDIUM - there are some suspicious indicators that warrant human investigation before approval.`;
+        } else {
+          return `Based on the fraud score of ${(score * 100).toFixed(1)}%, **I recommend ALLOWING** this transaction. The risk level is LOW and there are no significant fraud indicators.`;
+        }
+      }
+    }
+
+    // Default contextual responses
+    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("hey")) {
+      return "Hello! I'm here to help you understand fraud detection results. You can ask me to explain specific transactions, risk factors, or how our detection system works. What would you like to know?";
+    }
+
+    if (lowerMessage.includes("how") && lowerMessage.includes("work")) {
+      return "Our fraud detection system uses machine learning to analyze transactions in real-time. Here's how it works:\n\n1. **Data Collection**: Transaction details are captured including amount, location, time, device info, and historical patterns.\n\n2. **Feature Analysis**: Our model analyzes hundreds of features including spending patterns, geographical anomalies, and behavioral signals.\n\n3. **Risk Scoring**: Each transaction receives a fraud score (0-100%) based on how closely it matches known fraud patterns.\n\n4. **Decision**: Transactions with scores above threshold are flagged for review or automatic blocking\n\nWould you like more details on any specific aspect?";
+    }
+
+    if (lowerMessage.includes("what") && lowerMessage.includes("fraud")) {
+      return "Fraud, in the context of our detection system, refers to transactions that show suspicious characteristics indicating they may be unauthorized or deceptive. This includes:\n\n- **Account takeover**: Legitimate credentials used fraudulently\n- **Card testing**: Small fraudulent transactions to validate stolen cards\n- **Velocity anomalies**: Unusual spending patterns\n- **Geographic impossibilities**: Transactions from impossible locations\n- **Device fingerprinting**: Suspicious device signals\n\nOur AI analyzes these patterns to protect your users and transactions.";
+    }
+
+    if (lowerMessage.includes("help")) {
+      return "I can help you with:\n\n🔍 **Transaction Analysis**: 'Explain transaction ABC123'\n📊 **Risk Understanding**: 'What does this score mean?'\n⚠️ **Factor Identification**: 'What are the risk factors?'\n💡 **System Information**: 'How does fraud detection work?'\n📈 **Pattern Recognition**: 'What patterns indicate fraud?'\n\nJust ask me a question!";
+    }
+
+    // Default response when no specific context
+    return "I'd be happy to help you understand fraud detection better! To provide specific analysis, you can either:\n\n1. **Enter a transaction ID** to load specific fraud analysis\n2. **Ask general questions** about how fraud detection works\n\nWhat would you like to explore?";
   };
 
   return (
@@ -210,6 +321,27 @@ export default function ChatBotPage() {
           <p className="text-lg text-gray-600">
             Get contextual analysis and explanations for fraud detection results
           </p>
+          
+          {/* AI Status Indicator */}
+          {aiStatus && (
+            <div className={`mt-4 inline-flex items-center px-4 py-2 rounded-full text-sm ${
+              aiStatus.configured 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-yellow-100 text-yellow-700'
+            }`}>
+              {aiStatus.configured ? (
+                <>
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  AI Powered by {aiStatus.model}
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                  {aiStatus.message} - Set OPENAI_API_KEY for AI
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Chat Container */}
@@ -230,7 +362,10 @@ export default function ChatBotPage() {
                     {fraudContext.isFraud ? '⚠️ Fraud' : '✅ Safe'}
                   </span>
                   <button 
-                    onClick={() => setFraudContext(null)}
+                    onClick={() => {
+                      setFraudContext(null);
+                      setChatContext(null);
+                    }}
                     className="text-xs text-gray-500 hover:text-gray-700"
                   >
                     Clear
@@ -300,15 +435,15 @@ export default function ChatBotPage() {
         {/* Quick Actions */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            onClick={() => setInput("Explain the fraud score for this transaction")}
+            onClick={() => setInput("Should I block this transaction? Give me your recommendation.")}
             className="bg-white p-4 rounded-lg shadow border hover:shadow-md transition text-left"
           >
-            <div className="text-lg font-semibold text-gray-900">📊 Score Explanation</div>
-            <div className="text-sm text-gray-600">Understand what the fraud score means</div>
+            <div className="text-lg font-semibold text-gray-900">🎯 Get Recommendation</div>
+            <div className="text-sm text-gray-600">Ask AI for action recommendation</div>
           </button>
           
           <button
-            onClick={() => setInput("What are the main risk factors?")}
+            onClick={() => setInput("What are the main risk factors for this transaction?")}
             className="bg-white p-4 rounded-lg shadow border hover:shadow-md transition text-left"
           >
             <div className="text-lg font-semibold text-gray-900">⚠️ Risk Factors</div>
@@ -341,10 +476,10 @@ export default function ChatBotPage() {
               → What does a 75% fraud score mean?
             </button>
             <button 
-              onClick={() => setInput("Show me the key risk factors")}
+              onClick={() => setInput("Should I block or allow this transaction?")}
               className="text-left text-sm text-indigo-600 hover:text-indigo-800"
             >
-              → Show me the key risk factors
+              → Should I block or allow this transaction?
             </button>
             <button 
               onClick={() => setInput("How accurate is the fraud detection?")}

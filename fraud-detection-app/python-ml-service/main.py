@@ -23,6 +23,7 @@ import logging
 from app.routes.predict import router as predict_router
 from app.routes.explain import router as explain_router
 from app.routes.health import router as health_router
+from app.routes.chat import router as chat_router
 from app.middleware.auth import verify_ml_secret
 
 # Configure logging
@@ -41,18 +42,24 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS — only allow Laravel backend
+# CORS — allow Laravel backend and Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://laravel-app"],
-    allow_methods=["POST", "GET"],
-    allow_headers=["X-ML-Secret", "Content-Type"],
+    allow_origins=[
+        "http://localhost:8000",      # Laravel dev
+        "http://laravel-app",          # Laravel docker
+        "http://localhost:3000",      # Next.js dev
+        "http://localhost:3001",      # Next.js alt port
+    ],
+    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_headers=["X-ML-Secret", "Content-Type", "ngrok-skip-browser-warning"],
 )
 
 # Register routers
 app.include_router(health_router)
 app.include_router(predict_router, dependencies=[Depends(verify_ml_secret)])
 app.include_router(explain_router, dependencies=[Depends(verify_ml_secret)])
+app.include_router(chat_router)  # Chatbot endpoint (no auth required for public)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)

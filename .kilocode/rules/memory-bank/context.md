@@ -2,14 +2,19 @@
 
 ## Current State
 
-**Project Status**: ✅ Phases 3–7 scaffolding complete + Next.js frontend configurable via env vars
+**Project Status**: ✅ Phase 7 complete - AI Assistant integrated with OpenAI ChatGPT
 
 The project has been transformed from a blank Next.js template into a full FraudGuard
-ML fraud detection system. The Next.js frontend now uses environment variables
-for the ML service URL (NEXT_PUBLIC_ML_API_URL), making deployment to any host possible.
+ML fraud detection system. The AI Assistant now integrates with OpenAI GPT for
+real-time fraud analysis explanations.
 
 ## Recently Completed
 
+- [x] **OpenAI Integration**: Integrated ChatGPT into Python ML service
+  - Created AIExplainerService with professional fraud detection prompts
+  - Added /chat endpoint for conversational AI
+  - Added /explain/transaction endpoint for AI explanations
+  - Updated chatbot UI to use real OpenAI API
 - [x] **Environment Variable Fix**: Replaced hardcoded ngrok URLs with configurable
   `NEXT_PUBLIC_ML_API_URL` environment variable across all pages
 - [x] **.env.local.example**: Created template for deployment configuration
@@ -97,6 +102,9 @@ for the ML service URL (NEXT_PUBLIC_ML_API_URL), making deployment to any host p
 | GET | /health | Dashboard (status check) |
 | POST | /predict | Upload page (fraud detection) |
 | GET | /explain/<id> | Explain page & Chatbot (SHAP) |
+| POST | /chat | AI Assistant chatbot |
+| POST | /explain/transaction | AI Transaction explanation |
+| GET | /chat/status | Chatbot (check AI config) |
 
 ## Session History
 
@@ -105,3 +113,4 @@ for the ML service URL (NEXT_PUBLIC_ML_API_URL), making deployment to any host p
 | Initial | Template created with base setup |
 | 2026-02-26 | Full phases 3-7 scaffolding + Next.js dashboard with Flask ngrok integration |
 | 2026-02-27 | Fixed hardcoded ngrok URLs - now using NEXT_PUBLIC_ML_API_URL env var |
+| 2026-03-02 | Integrated OpenAI ChatGPT for AI-powered fraud explanations |
