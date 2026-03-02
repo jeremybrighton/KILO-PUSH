@@ -3,8 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
-const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
-
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -26,47 +24,31 @@ interface FraudContext {
   baseValue?: number;
 }
 
-interface AIStatus {
-  configured: boolean;
-  model?: string;
-  message: string;
-}
-
 export default function ChatBotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "assistant",
-      content: "Hello! I'm your FraudGuard AI assistant powered by OpenAI GPT. I can help you understand fraud detection results, explain risk factors, and provide insights into why certain transactions were flagged.\n\n**New Features:**\n- Context-aware conversations with transaction history\n- AI-generated explanations for any transaction\n- Investigation recommendations\n\nYou can ask me things like:\n- 'Why was transaction X flagged as fraud?'\n- 'What are the main risk factors?'\n- 'Should I block this transaction?'\n\nHow can I help you today?",
+      content: "Hello! I'm your FraudGuard AI assistant powered by OpenAI GPT. I can help you understand fraud detection results, explain risk factors, and provide insights into why certain transactions were flagged.\n\n**Features:**\n- Context-aware conversations about fraud analysis\n- AI-powered explanations for any transaction\n- Investigation recommendations\n\nYou can ask me things like:\n- 'Why was this transaction flagged as fraud?'\n- 'What are the main risk factors?'\n- 'Should I block this transaction?'\n\n**Note:** Enter your OpenAI API key in settings (🔐 icon) to enable AI responses.\n\nHow can I help you today?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [fraudContext, setFraudContext] = useState<FraudContext | null>(null);
-  const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
-  const [chatContext, setChatContext] = useState<{ history: Array<{ role: string; content: string }> } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [isApiKeySet, setIsApiKeySet] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Check AI status on mount
+  // Load API key from localStorage on mount
   useEffect(() => {
-    const checkAIStatus = async () => {
-      try {
-        const res = await fetch(`${ML_API_URL}/chat/status`, {
-          headers: { "ngrok-skip-browser-warning": "true" },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAiStatus(data);
-        }
-      } catch (error) {
-        setAiStatus({
-          configured: false,
-          message: "Unable to connect to AI service"
-        });
-      }
-    };
-    checkAIStatus();
+    const storedKey = localStorage.getItem("fraudguard_openai_api_key");
+    if (storedKey) {
+      setApiKey(storedKey);
+      setIsApiKeySet(true);
+    }
   }, []);
 
   const scrollToBottom = () => {
@@ -77,60 +59,34 @@ export default function ChatBotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleTransactionLookup = async (transactionId: string) => {
-    setIsLoading(true);
-    try {
-      // Try the explain endpoint first
-      const res = await fetch(`${ML_API_URL}/explain/${transactionId}`, {
-        headers: { "ngrok-skip-browser-warning": "true" },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setFraudContext({
-          transactionId,
-          fraudScore: data.fraud_score,
-          isFraud: data.is_fraud,
-          narrative: data.narrative,
-          topFeatures: data.top_features,
-          baseValue: data.base_value,
-        });
-        
-        // Also try to get AI explanation
-        if (aiStatus?.configured) {
-          try {
-            const aiRes = await fetch(`${ML_API_URL}/explain/transaction`, {
-              method: "POST",
-              headers: { 
-                "Content-Type": "application/json",
-                "ngrok-skip-browser-warning": "true"
-              },
-              body: JSON.stringify({
-                transaction_id: transactionId,
-                transaction_data: data,
-                fraud_score: data.fraud_score,
-                risk_factors: data.top_features,
-              }),
-            });
-            
-            if (aiRes.ok) {
-              const aiData = await aiRes.json();
-              return `I've loaded the analysis for transaction ${transactionId}.\n\n**AI Analysis:**\n${aiData.explanation}\n\n**Risk Level:** ${aiData.risk_level}\n**Recommendation:** ${aiData.recommendation}\n\nYou can ask me to explain this further or ask specific questions!`;
-            }
-          } catch (aiError) {
-            console.error("AI explanation failed:", aiError);
-          }
-        }
-        
-        return `I've loaded the analysis for transaction ${transactionId}. The fraud score is ${((data.fraud_score || 0) * 100).toFixed(1)}% and it was ${data.is_fraud ? 'flagged as fraud' : 'not flagged'}. ${data.narrative ? `\n\n${data.narrative}` : ''}\n\nYou can now ask me specific questions about this transaction!`;
-      } else {
-        return `I couldn't find transaction ${transactionId}. It may not exist in the system yet, or there might be an issue with the database. Would you like to try a different transaction ID?`;
-      }
-    } catch (error) {
-      return `I'm having trouble accessing the fraud detection system right now. The ML service may be temporarily unavailable. Please try again later or check if the transaction ID is correct.`;
-    } finally {
-      setIsLoading(false);
+  const handleSaveApiKey = () => {
+    if (!apiKey.trim()) {
+      setApiKeyError("Please enter a valid API key");
+      return;
     }
+    if (!apiKey.startsWith("sk-")) {
+      setApiKeyError("API key should start with 'sk-'");
+      return;
+    }
+    
+    localStorage.setItem("fraudguard_openai_api_key", apiKey.trim());
+    setIsApiKeySet(true);
+    setApiKeyError("");
+    setShowSettings(false);
+    
+    // Add system message about API key being set
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      role: "assistant",
+      content: "✅ API key configured successfully! I'm now powered by OpenAI GPT. You can ask me any questions about fraud detection and I'll provide AI-powered analysis.\n\nTry asking:\n- 'Why was this transaction flagged?'\n- 'What are the risk factors?'\n- 'Should I block this transaction?'",
+      timestamp: new Date(),
+    }]);
+  };
+
+  const handleClearApiKey = () => {
+    localStorage.removeItem("fraudguard_openai_api_key");
+    setApiKey("");
+    setIsApiKeySet(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,49 +105,52 @@ export default function ChatBotPage() {
     setIsLoading(true);
 
     try {
+      let responseContent: string;
+      
       // Check if user wants to look up a transaction
       const transactionMatch = input.match(/transaction\s+([a-zA-Z0-9-]+)/i) || input.match(/^([a-zA-Z0-9-]{8,})$/i);
       
-      let responseContent: string;
-      
-      // Use OpenAI chat if configured
-      if (aiStatus?.configured) {
+      if (transactionMatch) {
+        const transactionId = transactionMatch[1] || transactionMatch[0];
+        responseContent = `To analyze transaction ${transactionId}, I need access to the fraud detection database. Currently, I'm connected to OpenAI GPT for general fraud analysis.\n\nYou can ask me general questions like:\n- 'How does fraud detection work?'\n- 'What are common fraud patterns?'\n- 'What factors increase fraud risk?'\n\nWould you like me to explain these topics instead?`;
+      } else if (isApiKeySet) {
+        // Use OpenAI API directly
         try {
-          const res = await fetch(`${ML_API_URL}/chat`, {
+          // Build conversation history
+          const conversationHistory = messages
+            .filter(m => m.id !== "1") // Skip welcome message
+            .map(m => ({
+              role: m.role,
+              content: m.content
+            }));
+          
+          // Add current user message
+          conversationHistory.push({ role: "user", content: input });
+
+          const res = await fetch("/api/chat", {
             method: "POST",
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true"
             },
             body: JSON.stringify({
-              message: input,
-              transaction_id: fraudContext?.transactionId,
-              transaction_data: fraudContext ? {
-                transaction_id: fraudContext.transactionId,
-                fraud_score: fraudContext.fraudScore,
-                is_fraud: fraudContext.isFraud,
-                top_features: fraudContext.topFeatures,
-              } : undefined,
-              context: chatContext,
+              messages: conversationHistory,
+              apiKey: apiKey
             }),
           });
           
           if (res.ok) {
             const data = await res.json();
-            setChatContext(data.context);
-            responseContent = data.response;
+            responseContent = data.reply;
           } else {
-            throw new Error("Chat failed");
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Chat failed");
           }
-        } catch {
-          // Fall back to local responses
-          responseContent = await generateLocalResponse(input);
+        } catch (apiError) {
+          console.error("OpenAI API error:", apiError);
+          responseContent = `I encountered an error connecting to OpenAI. ${apiError instanceof Error ? apiError.message : 'Please check your API key and try again.'}`;
         }
-      } else if (transactionMatch) {
-        const transactionId = transactionMatch[1] || transactionMatch[0];
-        responseContent = await handleTransactionLookup(transactionId);
       } else {
-        // Use local responses when AI not available
+        // Use local responses when API key not set
         responseContent = await generateLocalResponse(input);
       }
 
@@ -221,51 +180,13 @@ export default function ChatBotPage() {
     }
   };
 
-  // Local response generation (fallback when AI not available)
+  // Local response generation (fallback when API key not available)
   const generateLocalResponse = async (userMessage: string): Promise<string> => {
     const lowerMessage = userMessage.toLowerCase();
     
-    // If we have fraud context, provide contextual responses
-    if (fraudContext) {
-      if (lowerMessage.includes("why") || lowerMessage.includes("explain")) {
-        if (fraudContext.narrative) {
-          return `Based on the analysis of transaction ${fraudContext.transactionId || 'in question'}:\n\n${fraudContext.narrative}\n\n**Key Risk Factors:**\n${fraudContext.topFeatures?.slice(0, 3).map((f, i) => `${i + 1}. ${f.name}: ${f.impact > 0 ? 'increased' : 'decreased'} risk by ${Math.abs(f.impact).toFixed(1)}%`).join('\n') || 'No specific factors identified'}\n\nThe fraud score of ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}% indicates ${fraudContext.isFraud ? 'a high likelihood of fraudulent activity' : 'some suspicious patterns that warrant attention'}.`;
-        }
-      }
-      
-      if (lowerMessage.includes("score") || lowerMessage.includes("confidence")) {
-        return `The fraud score for this transaction is ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}%.\n\nThis score is calculated using our machine learning model and represents the probability that this transaction is fraudulent. Here's how we interpret this:\n\n- **80-100%**: High fraud risk - immediate action recommended\n- **50-79%**: Medium fraud risk - review recommended\n- **20-49%**: Low fraud risk - monitor if needed\n- **0-19%**: Minimal risk - likely legitimate\n\nCurrent risk level: **${fraudContext.isFraud ? 'HIGH' : 'MEDIUM/LOW'}**`;
-      }
-
-      if (lowerMessage.includes("feature") || lowerMessage.includes("factor") || lowerMessage.includes("reason")) {
-        if (fraudContext.topFeatures && fraudContext.topFeatures.length > 0) {
-          return `The main factors contributing to this fraud analysis are:\n\n${fraudContext.topFeatures.map((f, i) => {
-            const impactDesc = f.impact > 0 ? 'increases' : 'decreases';
-            const riskLevel = f.impact > 5 ? 'significantly' : f.impact > 2 ? 'moderately' : 'slightly';
-            return `**${i + 1}. ${f.name}**: Value "${f.value}" ${impactDesc} fraud risk by ${riskLevel} (${Math.abs(f.impact).toFixed(2)}%)`;
-          }).join('\n\n')}`;
-        }
-      }
-
-      if (lowerMessage.includes("transaction") || lowerMessage.includes("details")) {
-        return `Here's the detailed breakdown for transaction ${fraudContext.transactionId || 'in question'}:\n\n**Fraud Score**: ${((fraudContext.fraudScore || 0) * 100).toFixed(1)}%\n**Classification**: ${fraudContext.isFraud ? '⚠️ Flagged as Fraud' : '✅ Not Flagged'}\n**Base Rate**: ${(fraudContext.baseValue ? fraudContext.baseValue * 100 : 50).toFixed(1)}%\n\n${fraudContext.narrative ? `**Analysis**: ${fraudContext.narrative}` : ''}`;
-      }
-
-      if (lowerMessage.includes("block") || lowerMessage.includes("allow") || lowerMessage.includes("approve") || lowerMessage.includes("decline")) {
-        const score = fraudContext.fraudScore || 0;
-        if (score >= 0.7) {
-          return `Based on the fraud score of ${(score * 100).toFixed(1)}%, **I recommend BLOCKING** this transaction. The risk level is HIGH and there are significant indicators of fraudulent activity.\n\nHowever, you should review the specific risk factors before making a final decision.`;
-        } else if (score >= 0.5) {
-          return `Based on the fraud score of ${(score * 100).toFixed(1)}%, **I recommend REVIEW** this transaction. The risk level is MEDIUM - there are some suspicious indicators that warrant human investigation before approval.`;
-        } else {
-          return `Based on the fraud score of ${(score * 100).toFixed(1)}%, **I recommend ALLOWING** this transaction. The risk level is LOW and there are no significant fraud indicators.`;
-        }
-      }
-    }
-
     // Default contextual responses
     if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("hey")) {
-      return "Hello! I'm here to help you understand fraud detection results. You can ask me to explain specific transactions, risk factors, or how our detection system works. What would you like to know?";
+      return "Hello! I'm here to help you understand fraud detection results. \n\n**To get AI-powered responses:**\n1. Click the 🔐 icon in the top right\n2. Enter your OpenAI API key\n3. Click Save\n\nYour API key is stored locally on your device and never sent to any server except OpenAI directly.\n\nWhat would you like to know?";
     }
 
     if (lowerMessage.includes("how") && lowerMessage.includes("work")) {
@@ -277,11 +198,15 @@ export default function ChatBotPage() {
     }
 
     if (lowerMessage.includes("help")) {
-      return "I can help you with:\n\n🔍 **Transaction Analysis**: 'Explain transaction ABC123'\n📊 **Risk Understanding**: 'What does this score mean?'\n⚠️ **Factor Identification**: 'What are the risk factors?'\n💡 **System Information**: 'How does fraud detection work?'\n📈 **Pattern Recognition**: 'What patterns indicate fraud?'\n\nJust ask me a question!";
+      return "I can help you with:\n\n🔍 **Transaction Analysis**: Ask about specific fraud cases\n📊 **Risk Understanding**: 'What does this score mean?'\n⚠️ **Factor Identification**: 'What are the risk factors?'\n💡 **System Information**: 'How does fraud detection work?'\n📈 **Pattern Recognition**: 'What patterns indicate fraud?'\n\n**Note:** Enter your OpenAI API key to get AI-powered responses!\n\nJust ask me a question!";
+    }
+
+    if (lowerMessage.includes("api") || lowerMessage.includes("key")) {
+      return "To enable AI-powered responses:\n\n1. Click the 🔐 icon in the top right corner\n2. Enter your OpenAI API key (starts with 'sk-')\n3. Click Save\n\nYour API key is:\n- Stored only in your browser's local storage\n- Never sent to our servers\n- Used only to call OpenAI's API directly\n\nYou can get a free API key from [OpenAI Platform](https://platform.openai.com/api-keys).";
     }
 
     // Default response when no specific context
-    return "I'd be happy to help you understand fraud detection better! To provide specific analysis, you can either:\n\n1. **Enter a transaction ID** to load specific fraud analysis\n2. **Ask general questions** about how fraud detection works\n\nWhat would you like to explore?";
+    return "I'd be happy to help you understand fraud detection better! \n\n**To get AI-powered analysis:**\n1. Click the 🔐 icon in the top right\n2. Enter your OpenAI API key\n3. Save and start chatting\n\nWithout an API key, I can still provide general information about fraud detection principles. What would you like to explore?";
   };
 
   return (
@@ -309,9 +234,105 @@ export default function ChatBotPage() {
                 <span className="text-indigo-600 font-medium">AI Assistant</span>
               </div>
             </div>
+            <div className="flex items-center space-x-4">
+              {/* API Key Status */}
+              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+                isApiKeySet 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${isApiKeySet ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                <span>{isApiKeySet ? 'AI Ready' : 'API Key Required'}</span>
+              </div>
+              
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition"
+                title="API Settings"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">🔐 API Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                OpenAI API Key
+              </label>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setApiKeyError("");
+                }}
+                placeholder="sk-..."
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 ${
+                  apiKeyError 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-indigo-500'
+                }`}
+              />
+              {apiKeyError && (
+                <p className="text-red-500 text-sm mt-1">{apiKeyError}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Your API key is stored locally in your browser and never sent to our servers.
+                Get a free key from{' '}
+                <a 
+                  href="https://platform.openai.com/api-keys" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 hover:underline"
+                >
+                  OpenAI Platform
+                </a>
+              </p>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleSaveApiKey}
+                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+              >
+                Save API Key
+              </button>
+              {isApiKeySet && (
+                <button
+                  onClick={() => {
+                    handleClearApiKey();
+                    setShowSettings(false);
+                  }}
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
@@ -321,27 +342,6 @@ export default function ChatBotPage() {
           <p className="text-lg text-gray-600">
             Get contextual analysis and explanations for fraud detection results
           </p>
-          
-          {/* AI Status Indicator */}
-          {aiStatus && (
-            <div className={`mt-4 inline-flex items-center px-4 py-2 rounded-full text-sm ${
-              aiStatus.configured 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-yellow-100 text-yellow-700'
-            }`}>
-              {aiStatus.configured ? (
-                <>
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                  AI Powered by {aiStatus.model}
-                </>
-              ) : (
-                <>
-                  <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                  {aiStatus.message} - Set OPENAI_API_KEY for AI
-                </>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Chat Container */}
@@ -362,10 +362,7 @@ export default function ChatBotPage() {
                     {fraudContext.isFraud ? '⚠️ Fraud' : '✅ Safe'}
                   </span>
                   <button 
-                    onClick={() => {
-                      setFraudContext(null);
-                      setChatContext(null);
-                    }}
+                    onClick={() => setFraudContext(null)}
                     className="text-xs text-gray-500 hover:text-gray-700"
                   >
                     Clear
@@ -417,7 +414,7 @@ export default function ChatBotPage() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about fraud detection, enter transaction ID, or ask for help..."
+                placeholder={isApiKeySet ? "Ask about fraud detection..." : "Enter API key to enable AI responses"}
                 className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 disabled={isLoading}
               />
@@ -435,19 +432,11 @@ export default function ChatBotPage() {
         {/* Quick Actions */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            onClick={() => setInput("Should I block this transaction? Give me your recommendation.")}
-            className="bg-white p-4 rounded-lg shadow border hover:shadow-md transition text-left"
-          >
-            <div className="text-lg font-semibold text-gray-900">🎯 Get Recommendation</div>
-            <div className="text-sm text-gray-600">Ask AI for action recommendation</div>
-          </button>
-          
-          <button
-            onClick={() => setInput("What are the main risk factors for this transaction?")}
+            onClick={() => setInput("What are the main risk factors for fraudulent transactions?")}
             className="bg-white p-4 rounded-lg shadow border hover:shadow-md transition text-left"
           >
             <div className="text-lg font-semibold text-gray-900">⚠️ Risk Factors</div>
-            <div className="text-sm text-gray-600">See what triggered the fraud detection</div>
+            <div className="text-sm text-gray-600">Learn what triggers fraud detection</div>
           </button>
           
           <button
@@ -457,38 +446,31 @@ export default function ChatBotPage() {
             <div className="text-lg font-semibold text-gray-900">💡 How It Works</div>
             <div className="text-sm text-gray-600">Learn about our detection methodology</div>
           </button>
+          
+          <button
+            onClick={() => setInput("What are common fraud patterns to watch for?")}
+            className="bg-white p-4 rounded-lg shadow border hover:shadow-md transition text-left"
+          >
+            <div className="text-lg font-semibold text-gray-900">🔍 Fraud Patterns</div>
+            <div className="text-sm text-gray-600">Common types of fraud</div>
+          </button>
         </div>
 
-        {/* Example Questions */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">💬 Example Questions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button 
-              onClick={() => setInput("Why was this transaction flagged as fraud?")}
-              className="text-left text-sm text-indigo-600 hover:text-indigo-800"
+        {/* API Key Setup */}
+        {!isApiKeySet && (
+          <div className="mt-8 bg-indigo-50 rounded-lg shadow p-6 border border-indigo-100">
+            <h3 className="text-lg font-semibold text-indigo-900 mb-2">🚀 Enable AI-Powered Responses</h3>
+            <p className="text-indigo-700 mb-4">
+              Enter your OpenAI API key to unlock full AI capabilities. Your key is stored locally and never sent to our servers.
+            </p>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
             >
-              → Why was this transaction flagged as fraud?
-            </button>
-            <button 
-              onClick={() => setInput("What does a 75% fraud score mean?")}
-              className="text-left text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              → What does a 75% fraud score mean?
-            </button>
-            <button 
-              onClick={() => setInput("Should I block or allow this transaction?")}
-              className="text-left text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              → Should I block or allow this transaction?
-            </button>
-            <button 
-              onClick={() => setInput("How accurate is the fraud detection?")}
-              className="text-left text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              → How accurate is the fraud detection?
+              Enter API Key
             </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
