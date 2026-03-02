@@ -28,6 +28,12 @@ import {
 
 const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
 
+// Laravel API URL for real data
+const LARAVEL_API_URL = process.env.NEXT_PUBLIC_LARAVEL_API_URL || "http://localhost:8000/api";
+
+// Toggle between demo and real data
+const USE_REAL_DATA = process.env.NEXT_PUBLIC_USE_REAL_DATA === "true";
+
 // Placeholder data for fraud dashboard
 const PLACEHOLDER_ALERTS = [
   { id: 1, type: "critical", message: "Unusual transaction spike detected from Unknown region", time: "2 min ago", severity: 95 },
@@ -769,13 +775,30 @@ export default function DashboardPage() {
             <VendorRiskRanking />
           </div>
 
-          {/* Note */}
-          <div className="mt-6 bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
-            <p className="text-sm text-cyan-300">
-              <strong className="text-cyan-400">Phase 5 Note:</strong> This dashboard shows placeholder data.
-              After uploading a CSV on the <Link href="/upload" className="underline hover:text-cyan-200">Upload page</Link>,
-              real ML results from your Flask service will populate here.
-            </p>
+          {/* Data Status Note */}
+          <div className="mt-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-amber-300 font-medium">
+                  <strong className="text-amber-400">Demo Mode Active</strong>
+                </p>
+                <p className="text-sm text-slate-300 mt-1">
+                  This dashboard shows <strong>demo/placeholder data</strong> for demonstration purposes. 
+                  To see real fraud predictions:
+                </p>
+                <ol className="text-sm text-slate-300 mt-2 list-decimal list-inside space-y-1">
+                  <li>Set up the Laravel backend: <code className="bg-slate-800 px-1 rounded">cd fraud-detection-app && composer install && php artisan migrate && php artisan db:seed</code></li>
+                  <li>Start Laravel: <code className="bg-slate-800 px-1 rounded">php artisan serve</code></li>
+                  <li>Start Python ML: <code className="bg-slate-800 px-1 rounded">cd python-ml-service && python main.py</code></li>
+                  <li>Upload transaction CSV on the <Link href="/upload" className="underline hover:text-amber-200">Upload page</Link></li>
+                  <li>View real results after ML processing completes</li>
+                </ol>
+                <p className="text-sm text-slate-400 mt-2">
+                  See <Link href="/api-test" className="underline hover:text-cyan-200">API Test page</Link> to verify ML service connectivity.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </main>

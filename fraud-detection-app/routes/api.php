@@ -24,6 +24,21 @@ Route::middleware('api.secret')->prefix('internal')->group(function () {
 });
 
 // ─────────────────────────────────────────────
+// PUBLIC API — Health check (no auth required)
+// ─────────────────────────────────────────────
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
+// ─────────────────────────────────────────────
+// DASHBOARD API — Real data for Next.js frontend
+// ─────────────────────────────────────────────
+require __DIR__ . '/api-dashboard.php';
+
+// ─────────────────────────────────────────────
 // AUTHENTICATED API — Sanctum token auth
 // Used by Vue.js dashboard components
 // ─────────────────────────────────────────────
