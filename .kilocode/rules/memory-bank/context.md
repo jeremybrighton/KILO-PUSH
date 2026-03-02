@@ -10,6 +10,12 @@ real-time fraud analysis explanations.
 
 ## Recently Completed
 
+- [x] **Direct OpenAI Integration**: Added browser-based ChatGPT integration
+  - Created `/api/chat` route for direct OpenAI API calls
+  - Updated chatbot to accept API key in browser (stored in localStorage)
+  - Added settings modal for API key management
+  - Works WITHOUT Docker/Python - just needs user's OpenAI API key
+  - Falls back to local responses when no API key provided
 - [x] **OpenAI Integration**: Integrated ChatGPT into Python ML service
   - Created AIExplainerService with professional fraud detection prompts
   - Added /chat endpoint for conversational AI
