@@ -646,8 +646,22 @@ export default function DashboardPage() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
-    fetch(`${ML_API_URL}/health`, { headers: { "ngrok-skip-browser-warning": "true" } })
-      .then((r) => setMlStatus(r.ok ? "online" : "offline"))
+    fetch(`${ML_API_URL}/`, { headers: { "ngrok-skip-browser-warning": "true" } })
+      .then((r) => {
+        if (r.ok) {
+          r.json().then((data) => {
+            // Accept both /health (returns {"status":"ok"}) and / (returns {"status":"Model API is running!"})
+            if (data.status === "ok" || data.status?.includes("Model API")) {
+              setMlStatus("online");
+            } else {
+              setMlStatus("offline");
+            }
+          }).catch(() => setMlStatus("offline"));
+        } else {
+          setMlStatus("offline");
+        }
+      })
+      .catch(() => setMlStatus("offline"));
       .catch(() => setMlStatus("offline"));
   }, []);
 
@@ -655,8 +669,21 @@ export default function DashboardPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setLastUpdate(new Date());
-      fetch(`${ML_API_URL}/health`, { headers: { "ngrok-skip-browser-warning": "true" } })
-        .then((r) => setMlStatus(r.ok ? "online" : "offline"))
+      fetch(`${ML_API_URL}/`, { headers: { "ngrok-skip-browser-warning": "true" } })
+        .then((r) => {
+          if (r.ok) {
+            r.json().then((data) => {
+              if (data.status === "ok" || data.status?.includes("Model API")) {
+                setMlStatus("online");
+              } else {
+                setMlStatus("offline");
+              }
+            }).catch(() => setMlStatus("offline"));
+          } else {
+            setMlStatus("offline");
+          }
+        })
+        .catch(() => setMlStatus("offline"));
         .catch(() => setMlStatus("offline"));
     }, 30000);
     return () => clearInterval(interval);
