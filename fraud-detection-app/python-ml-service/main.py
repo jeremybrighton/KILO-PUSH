@@ -42,22 +42,18 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS — allow Laravel backend and Next.js frontend
+# CORS — allow all origins for flexible deployment
+# In production, you may want to restrict this to your specific domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8000",      # Laravel dev
-        "http://laravel-app",          # Laravel docker
-        "http://localhost:3000",      # Next.js dev
-        "http://localhost:3001",      # Next.js alt port
-    ],
+    allow_origins=["*"],  # Allow all origins for Vercel compatibility
     allow_methods=["POST", "GET", "OPTIONS"],
-    allow_headers=["X-ML-Secret", "Content-Type", "ngrok-skip-browser-warning"],
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Register routers
 app.include_router(health_router)
-app.include_router(predict_router, dependencies=[Depends(verify_ml_secret)])
+app.include_router(predict_router)  # /predict is public for Next.js frontend
 app.include_router(explain_router, dependencies=[Depends(verify_ml_secret)])
 app.include_router(chat_router)  # Chatbot endpoint (no auth required for public)
 

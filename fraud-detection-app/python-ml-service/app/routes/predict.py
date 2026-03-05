@@ -6,12 +6,15 @@ Loads the CSV, runs the ML model, and POSTs results back to Laravel.
 Data flow:
   Laravel Job → POST /process-dataset → this route
   This route → background task → POST /api/internal/ml-results → Laravel
+
+Also supports direct prediction via POST /predict for Next.js frontend.
 """
 
 import logging
 import asyncio
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
+from typing import List, Optional
 import httpx
 
 from app.services.fraud_detector import FraudDetectorService
@@ -20,7 +23,48 @@ from app.services.callback_service import CallbackService
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# ── Request schema ────────────────────────────────────
+# ── Request schema for direct prediction ───────────────────────
+class TransactionInput(BaseModel):
+    transaction_id: str
+    amount: float
+    vendor_id: str
+    vendor_name: Optional[str] = None
+    region: Optional[str] = None
+    timestamp: Optional[str] = None
+    card_present: Optional[bool] = None
+    online_transaction: Optional[bool] = None
+    transaction_count_1h: Optional[int] = 0
+    avg_transaction_amount_24h: Optional[float] = 0.0
+
+class PredictRequest(BaseModel):
+    transactions: List[TransactionInput]
+
+
+# ── POST /predict — Direct prediction for Next.js frontend ────
+@router.post("/predict")
+async def predict(request: PredictRequest):
+    """
+    Accepts transaction JSON directly from Next.js frontend.
+    Returns fraud predictions immediately (no background processing).
+    """
+    logger.info(f"Received direct prediction request for {len(request.transactions)} transactions")
+    
+    detector = FraudDetectorService()
+    
+    try:
+        # Run fraud detection on the transactions
+        results = await detector.predict_transactions(request.transactions)
+        
+        return {
+            "status": "success",
+            "predictions": results
+        }
+    except Exception as e:
+        logger.error(f"Prediction failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Request schema for batch processing ────────────────────────
 class ProcessDatasetRequest(BaseModel):
     dataset_id: int
     dataset_path: str       # Absolute path to CSV file on shared storage

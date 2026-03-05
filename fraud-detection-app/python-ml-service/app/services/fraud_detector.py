@@ -155,3 +155,47 @@ class FraudDetectorService:
         )
 
         return scores
+
+    async def predict_transactions(self, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Run fraud detection on a list of transaction JSON objects.
+        Used by Next.js frontend for real-time predictions.
+
+        Args:
+            transactions: List of transaction dicts with transaction_id, amount, etc.
+
+        Returns:
+            List of dicts with transaction_id, fraud_score, is_fraud, etc.
+        """
+        logger.info(f"Running predictions on {len(transactions)} transactions")
+
+        # Convert to DataFrame for consistent processing
+        df = pd.DataFrame(transactions)
+
+        # Run predictions
+        if self.model is not None:
+            fraud_scores = self._predict_with_model(df)
+        else:
+            # Use placeholder for development
+            logger.warning("Using placeholder random predictions — replace with real model")
+            fraud_scores = self._placeholder_predictions(df)
+
+        # Build results list
+        results = []
+        for idx, txn in enumerate(transactions):
+            score = float(fraud_scores[idx])
+            results.append({
+                "transaction_id": str(txn.get("transaction_id", "")),
+                "fraud_score": round(score, 4),
+                "is_fraud": score >= FRAUD_THRESHOLD,
+                "is_anomaly": score >= ANOMALY_THRESHOLD,
+                "vendor_id": str(txn.get("vendor_id", "")) or None,
+                "vendor_name": str(txn.get("vendor_name", "")) or None,
+                "region": str(txn.get("region", "")) or None,
+                "amount": float(txn.get("amount", 0)) if txn.get("amount") else None,
+            })
+
+        fraud_count = sum(1 for r in results if r["is_fraud"])
+        logger.info(f"Prediction complete: {fraud_count}/{len(results)} flagged as fraud")
+
+        return results
