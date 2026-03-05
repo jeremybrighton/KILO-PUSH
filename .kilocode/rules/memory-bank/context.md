@@ -28,6 +28,7 @@ real-time fraud analysis explanations.
   - Added /explain/transaction endpoint for AI explanations
   - Updated chatbot UI to use real OpenAI API
 - [x] **Environment Variable Name Fix**: Changed all references from `NEXT_PUBLIC_ML_API_URL` to `NEXT_PUBLIC_API_URL` to match the variable name set in Vercel dashboard
+- [x] **Health Check Endpoint Fix**: Changed ML health check from `/health` to `/` (root endpoint) because Render service returns `{"status":"Model API is running!"}` at root but 404 at `/health`. Dashboard now properly detects ML service as online.
 
 ## Recently Completed
 
