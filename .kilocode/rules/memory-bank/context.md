@@ -126,3 +126,4 @@ real-time fraud analysis explanations.
 | 2026-02-26 | Full phases 3-7 scaffolding + Next.js dashboard with Flask ngrok integration |
 | 2026-02-27 | Fixed hardcoded ngrok URLs - now using NEXT_PUBLIC_ML_API_URL env var |
 | 2026-03-02 | Integrated OpenAI ChatGPT for AI-powered fraud explanations |
+| 2026-03-05 | Fixed hardcoded localhost:5000 in API test page, added .env.local.example for Vercel config |
