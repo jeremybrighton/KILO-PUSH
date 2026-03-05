@@ -662,6 +662,9 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Hide demo banner when ML service is online
+  const isDemoMode = mlStatus !== "online";
+
   return (
     <div className="min-h-screen bg-slate-950">
       <Sidebar activePage="dashboard" />
@@ -695,7 +698,8 @@ export default function DashboardPage() {
                   mlStatus === "offline" ? "bg-red-400" : "bg-yellow-400 animate-pulse"
                 }`}></span>
                 <span className="text-xs text-slate-300">
-                  ML Service: {mlStatus === "checking" ? "Checking..." : mlStatus}
+                  ML: {mlStatus === "checking" ? "Checking..." : mlStatus}
+                  {mlStatus === "offline" && <span className="text-red-400 ml-1">({ML_API_URL})</span>}
                 </span>
               </div>
             </div>
@@ -775,7 +779,8 @@ export default function DashboardPage() {
             <VendorRiskRanking />
           </div>
 
-          {/* Data Status Note */}
+          {/* Data Status Note - only show in demo mode */}
+          {isDemoMode && (
           <div className="mt-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5" />
@@ -800,6 +805,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </main>
     </div>
