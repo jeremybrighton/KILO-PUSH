@@ -123,7 +123,7 @@ export default function Home() {
             </div>
             <div className="bg-gray-800 rounded-lg p-4">
               <p className="text-gray-400 mb-1">Local Flask Service</p>
-              <code className="text-blue-400 text-xs">http://localhost:5000</code>
+              <code className="text-blue-400 text-xs">{process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000"}</code>
             </div>
           </div>
         </div>
