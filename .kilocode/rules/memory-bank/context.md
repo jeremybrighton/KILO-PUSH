@@ -10,6 +10,11 @@ real-time fraud analysis explanations.
 
 ## Recently Completed
 
+- [x] **CORS Fix for Vercel**: Updated Python ML service CORS to allow all origins (`[*]`) so Vercel frontend can call Render ML API
+- [x] **Direct /predict Endpoint**: Added new POST `/predict` endpoint that accepts transaction JSON directly from Next.js frontend (no auth required)
+- [x] **predict_transactions Method**: Added `predict_transactions()` method to FraudDetectorService for real-time predictions
+- [x] **Pushed to Git**: Committed and pushed all changes for deployment to Render
+
 - [x] **Direct OpenAI Integration**: Added browser-based ChatGPT integration
   - Created `/api/chat` route for direct OpenAI API calls
   - Updated chatbot to accept API key in browser (stored in localStorage)
