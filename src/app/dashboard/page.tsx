@@ -1,6 +1,8 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   Shield, 
@@ -644,9 +646,39 @@ function GeoRiskMap() {
 
 // Main Dashboard Component
 export default function DashboardPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [mlStatus, setMlStatus] = useState<"checking" | "online" | "offline">("checking");
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
+  // Check authentication on mount - use ref to prevent multiple checks
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  const authChecked = useRef(false);
+  
+  useEffect(() => {
+    if (authChecked.current) return;
+    authChecked.current = true;
+    
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Failed to parse user data');
+      }
+    }
+    setIsLoading(false);
+  }, [router]);
+
+  // Check ML API status
   useEffect(() => {
     // Debug: Log actual URL being used
     console.log("[FraudGuard] ML API URL:", ML_API_URL);
@@ -695,6 +727,20 @@ export default function DashboardPage() {
     }, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   // Hide demo banner when ML service is online
   const isDemoMode = mlStatus !== "online";
