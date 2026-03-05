@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || process.env.ML_API_URL || "http://localhost:5000";
+const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
 
 interface Feature {
   name: string;

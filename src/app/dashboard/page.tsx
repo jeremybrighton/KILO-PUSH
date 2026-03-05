@@ -26,7 +26,9 @@ import {
   RefreshCw
 } from "lucide-react";
 
-const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || process.env.ML_API_URL || "http://localhost:5000";
+const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
+
+// Debug: Log the actual URL being used (check browser console)
 
 // Laravel API URL for real data
 const LARAVEL_API_URL = process.env.NEXT_PUBLIC_LARAVEL_API_URL || "http://localhost:8000/api";
@@ -646,6 +648,13 @@ export default function DashboardPage() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
+    // Debug: Log actual URL being used
+    console.log("[FraudGuard] ML API URL:", ML_API_URL);
+    console.log("[FraudGuard] Env vars:", {
+      NEXT_PUBLIC_ML_API_URL: process.env.NEXT_PUBLIC_ML_API_URL,
+      ML_API_URL: process.env.ML_API_URL
+    });
+    
     fetch(`${ML_API_URL}/`, { headers: { "ngrok-skip-browser-warning": "true" } })
       .then((r) => {
         if (r.ok) {
@@ -725,6 +734,9 @@ export default function DashboardPage() {
                 <span className="text-xs text-slate-300">
                   ML: {mlStatus === "checking" ? "Checking..." : mlStatus}
                   {mlStatus === "offline" && <span className="text-red-400 ml-1">({ML_API_URL})</span>}
+                </span>
+                <span className="text-[10px] text-slate-500 ml-1" title="Check browser console for debug info">
+                  [{ML_API_URL === "http://localhost:5000" ? "USING LOCALHOST - CHECK ENV" : "OK"}]
                 </span>
               </div>
             </div>
