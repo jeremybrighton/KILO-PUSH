@@ -26,7 +26,7 @@ import {
   RefreshCw
 } from "lucide-react";
 
-const ML_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const ML_API_URL = process.env.NEXT_PUBLIC_ML_API_URL || "http://localhost:5000";
 
 // Laravel API URL for real data
 const LARAVEL_API_URL = process.env.NEXT_PUBLIC_LARAVEL_API_URL || "http://localhost:8000/api";
