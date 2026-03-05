@@ -21,7 +21,8 @@ real-time fraud analysis explanations.
   - Added settings modal for API key management
   - Works WITHOUT Docker/Python - just needs user's OpenAI API key
   - Falls back to local responses when no API key provided
-- [x] **OpenAI Integration**: Integrated ChatGPT into Python ML service
+- [x] **Fixed ML API URL Display**: Updated home page to use `NEXT_PUBLIC_ML_API_URL` env var for "Local Flask Service" display (was hardcoded to localhost:5000)
+- [x] **.env.local created**: Added local environment file with `NEXT_PUBLIC_ML_API_URL=https://ml-file-for-url.onrender.com`
   - Created AIExplainerService with professional fraud detection prompts
   - Added /chat endpoint for conversational AI
   - Added /explain/transaction endpoint for AI explanations
