@@ -662,7 +662,6 @@ export default function DashboardPage() {
         }
       })
       .catch(() => setMlStatus("offline"));
-      .catch(() => setMlStatus("offline"));
   }, []);
 
   // Auto-refresh every 30 seconds
@@ -683,7 +682,6 @@ export default function DashboardPage() {
             setMlStatus("offline");
           }
         })
-        .catch(() => setMlStatus("offline"));
         .catch(() => setMlStatus("offline"));
     }, 30000);
     return () => clearInterval(interval);
