@@ -27,9 +27,7 @@ real-time fraud analysis explanations.
   - Added /chat endpoint for conversational AI
   - Added /explain/transaction endpoint for AI explanations
   - Updated chatbot UI to use real OpenAI API
-- [x] **Environment Variable Fix**: Replaced hardcoded ngrok URLs with configurable
-  `NEXT_PUBLIC_ML_API_URL` environment variable across all pages
-- [x] **.env.local.example**: Created template for deployment configuration
+- [x] **Environment Variable Name Fix**: Changed all references from `NEXT_PUBLIC_ML_API_URL` to `NEXT_PUBLIC_API_URL` to match the variable name set in Vercel dashboard
 
 ## Recently Completed
 
