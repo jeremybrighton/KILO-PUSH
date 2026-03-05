@@ -166,7 +166,7 @@ export default function ApiTestPage() {
         <div className="mt-8 bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="font-bold text-white mb-4">📋 Expected Flask Endpoints</h2>
           <p className="text-sm text-gray-400 mb-4">
-            Your Flask app at <code className="text-green-400">localhost:5000</code> should expose these endpoints.
+            Your Flask app at <code className="text-green-400">{ML_API_URL}</code> should expose these endpoints.
             If they don&apos;t exist yet, add them to your Flask app.
           </p>
           <div className="space-y-3">
