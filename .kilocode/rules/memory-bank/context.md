@@ -2,7 +2,19 @@
 
 ## Current State
 
-**Project Status**: ✅ Phase 7 complete - AI Assistant integrated with OpenAI ChatGPT
+**Project Status**: ✅ Authentication system added (backend scaffolding ready)
+
+## Recently Completed
+
+- [x] **Node.js Backend**: Created Express + MongoDB authentication backend
+  - User model with bcrypt password hashing
+  - JWT authentication middleware
+  - OTP email verification (Nodemailer)
+  - Role-based access control (admin/user)
+  - Admin panel with user management
+- [x] **Frontend Auth Pages**: /login, /register, /verify-otp, /admin
+- [x] **Protected Dashboard**: Auth check before accessing dashboard
+- [x] **Environment Config**: Added NEXT_PUBLIC_BACKEND_URL to .env.local.example
 
 The project has been transformed from a blank Next.js template into a full FraudGuard
 ML fraud detection system. The AI Assistant now integrates with OpenAI GPT for
@@ -94,18 +106,39 @@ real-time fraud analysis explanations.
 | Path | Purpose | Status |
 |------|---------|--------|
 | `src/app/page.tsx` | Home/landing page | ✅ Live |
-| `src/app/upload/page.tsx` | CSV upload + ML results | ✅ Live |
+| `src/app/login/page.tsx` | Login page | ✅ Ready (needs backend) |
+| `src/app/register/page.tsx` | Registration page | ✅ Ready (needs backend) |
+| `src/app/verify-otp/page.tsx` | OTP verification | ✅ Ready (needs backend) |
 | `src/app/dashboard/page.tsx` | Analytics dashboard | ✅ Live |
+| `src/app/admin/page.tsx` | Admin panel | ✅ Ready (needs backend) |
+| `src/app/upload/page.tsx` | CSV upload + ML results | ✅ Live |
 | `src/app/explain/page.tsx` | SHAP explainability | ✅ Live |
 | `src/app/api-test/page.tsx` | Flask API tester | ✅ Live |
 | `src/app/chatbot/page.tsx` | AI Assistant chatbot | ✅ Live |
-| `fraud-detection-app/` | Laravel scaffolding | ✅ Ready |
-| `fraud-detection-app/python-ml-service/` | FastAPI scaffolding | ✅ Ready |
+| `backend/` | Node.js auth backend | ✅ Scaffolding ready |
 
-## What's Needed Next
+## What's Needed to Run
 
-1. **Connect real ML model**: Replace placeholder in `fraud_detector.py` with Phase 2 model
-2. **Laravel setup**: Run `composer install`, `php artisan migrate`, configure `.env`
+### Backend Setup
+1. **MongoDB**: Create free account at MongoDB Atlas or use local MongoDB
+2. **Deploy Backend**: Deploy `backend/` folder to Render/Railway
+3. **Environment Variables** (backend):
+   - `MONGODB_URI`: Your MongoDB connection string
+   - `JWT_SECRET`: Random string for JWT signing
+   - `EMAIL_USER`: Gmail for OTP emails
+   - `EMAIL_PASS`: Gmail app password
+4. **Frontend Environment Variable**:
+   - `NEXT_PUBLIC_BACKEND_URL`: Your deployed backend URL
+
+### Quick Test
+To test locally:
+```bash
+cd backend
+cp .env.example .env
+# Edit .env with your MongoDB URI
+npm install
+npm start
+```
 
 ## Flask Endpoints Expected by Frontend
 

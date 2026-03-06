@@ -12,6 +12,7 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -19,15 +20,53 @@ export default function LoginPage() {
     if (token) {
       router.push('/dashboard');
     }
+    
+    // Auto-detect demo mode if no backend URL is set
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (!backendUrl) {
+      setDemoMode(true);
+    }
   }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleDemoLogin = () => {
+    // Demo login - works without backend
+    const demoUser = {
+      id: 'demo-123',
+      name: 'Demo User',
+      email: 'demo@example.com',
+      role: 'user'
+    };
+    localStorage.setItem('token', 'demo-token');
+    localStorage.setItem('user', JSON.stringify(demoUser));
+    router.push('/dashboard');
+  };
+
+  const handleAdminDemoLogin = () => {
+    // Demo admin login
+    const demoAdmin = {
+      id: 'admin-123',
+      name: 'Admin User',
+      email: 'admin@example.com',
+      role: 'admin'
+    };
+    localStorage.setItem('token', 'demo-admin-token');
+    localStorage.setItem('user', JSON.stringify(demoAdmin));
+    router.push('/admin');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // In demo mode, show error
+    if (demoMode) {
+      setError('Backend not configured. Use demo login below.');
+      return;
+    }
 
     setLoading(true);
 
@@ -80,6 +119,13 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {demoMode && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded">
+            <p className="text-sm font-medium">Demo Mode Active</p>
+            <p className="text-xs mt-1">Backend not configured. Use demo buttons below.</p>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -130,12 +176,33 @@ export default function LoginPage() {
           </button>
 
           <p className="text-center text-sm text-gray-600">
-            Don&apos;t have an account?{' '}
+            Don't have an account?{' '}
             <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
               Register
             </Link>
           </p>
         </form>
+
+        {/* Demo Login Section */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <p className="text-center text-sm text-gray-500 mb-4">Or try demo mode:</p>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Demo User Login
+            </button>
+            <button
+              type="button"
+              onClick={handleAdminDemoLogin}
+              className="w-full flex justify-center py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Demo Admin Login
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
