@@ -104,9 +104,14 @@ function Sidebar({ activePage }: { activePage: string }) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Use window.location for full page navigation to clear React state
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const navItems = [
@@ -756,9 +761,14 @@ export default function DashboardPage() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Use window.location for full page navigation to clear React state
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   if (isLoading) {
