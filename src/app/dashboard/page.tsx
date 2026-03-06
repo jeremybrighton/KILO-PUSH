@@ -19,6 +19,7 @@ import {
   Zap,
   Eye,
   Lock,
+  LogOut,
   Database,
   Clock,
   CheckCircle,
@@ -91,6 +92,23 @@ const PLACEHOLDER_TIMESERIES = Array.from({ length: 14 }, (_, i) => {
 
 // Sidebar component
 function Sidebar({ activePage }: { activePage: string }) {
+  const router = useRouter();
+  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+
+  useEffect(() => {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
+
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Shield, href: "/dashboard" },
     { id: "upload", label: "Upload Data", icon: Database, href: "/upload" },
@@ -160,13 +178,22 @@ function Sidebar({ activePage }: { activePage: string }) {
           <Settings className="w-5 h-5" />
           <span className="text-sm font-medium">Settings</span>
         </Link>
+        <button
+          onClick={handleLogout}
+          className="w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="text-sm font-medium">Logout</span>
+        </button>
         <div className="mt-4 flex items-center gap-3 px-3">
           <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
-            <span className="text-xs text-white font-medium">AD</span>
+            <span className="text-xs text-white font-medium">
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'AD'}
+            </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-white truncate">Admin User</p>
-            <p className="text-xs text-slate-400">admin@fraugguard.com</p>
+            <p className="text-sm text-white truncate">{user?.name || 'Admin User'}</p>
+            <p className="text-xs text-slate-400">{user?.email || 'admin@fraudguard.com'}</p>
           </div>
         </div>
       </div>
