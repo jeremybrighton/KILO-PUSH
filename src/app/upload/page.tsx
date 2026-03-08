@@ -109,8 +109,8 @@ export default function UploadPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 mb-8">
           <h2 className="text-xl font-bold mb-2">Upload CSV for Fraud Detection</h2>
           <p className="text-gray-400 text-sm mb-6">
-            Your CSV will be parsed and sent directly to your Flask ML service at{" "}
-            <code className="text-green-400">ngrok → localhost:5000/predict</code>
+            Your CSV will be parsed and sent directly to your ML service at{" "}
+            <code className="text-green-400">{ML_API_URL}/predict</code>
           </p>
 
           <form onSubmit={handleSubmit}>
